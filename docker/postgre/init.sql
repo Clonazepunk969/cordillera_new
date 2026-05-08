@@ -1,0 +1,2 @@
+CREATE DATABASE cordillera_kpi_db;
+CREATE DATABASE cordillera_report_db;

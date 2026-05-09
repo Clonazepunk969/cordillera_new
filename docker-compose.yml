@@ -1,67 +1,69 @@
 version: "3.9"
 
 services:
-  postgres:
-    image: postgres:16
-    container_name: cordillera-postgres
-    restart: always
-    environment:
-      POSTGRES_USER: ${DB_USER} # Variable de entorno para el usuario
-      POSTGRES_PASSWORD: ${DB_PASSWORD} # Variable de entorno para la contraseña
-      POSTGRES_DB: postgres
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./docker/postgres/init:/docker-entrypoint-initdb.d
+  #postgres:
+  #  image: postgres:16
+  #  container_name: cordillera-postgres
+  #  restart: always
+    #environment:
+    #  POSTGRES_USER: ${DB_USER} # Variable de entorno para el usuario
+    #  POSTGRES_PASSWORD: ${DB_PASSWORD} # Variable de entorno para la contraseña
+    #  POSTGRES_DB: postgres
+    #ports:
+    #  - "5432:5432"
+    #volumes:
+    #  - postgres_data:/var/lib/postgresql/data
+    #  - ./docker/postgres/init:/docker-entrypoint-initdb.d
 
-  kpi-service:
-    build: ./cordillera-kpi-service
-    container_name: cordillera-kpi-service
-    restart: always
-    depends_on:
-      - postgres
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/cordillera_kpi_db
-      SPRING_DATASOURCE_USERNAME: ${DB_USER} # Variable de entorno para el usuario
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD} # Variable de entorno para la contraseña
-    ports:
-      - "8082:8082"
+    kpi-service:
+      build: ./cordillera-kpi-service
+      container_name: cordillera-kpi-service
+      restart: always
+    #depends_on:
+    #  - postgres
+      environment:
+        SPRING_DATASOURCE_URL: ${DB_URL_KPI} # Variable de entorno para la URL de la base de datos
+        SPRING_DATASOURCE_USERNAME: ${DB_USER} # Variable de entorno para el usuario
+        SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD} # Variable de entorno para la contraseña
+        SPRING_JPA_HIBERNATE_DDL_AUTO: update # Configuración para actualizar el esquema de la base de datos
+      ports:
+        - "8082:8082"
 
-  report-service:
-    build: ./cordillera-report-service
-    container_name: cordillera-report-service
-    restart: always
-    depends_on:
-      - postgres
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/cordillera_report_db
-      SPRING_DATASOURCE_USERNAME: ${DB_USER} # Variable de entorno para el usuario
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD} # Variable de entorno para la contraseña
-    ports:
-      - "8081:8081"
+    report-service:
+      build: ./cordillera-report-service
+      container_name: cordillera-report-service
+      restart: always
+    #depends_on:
+    #  - postgres
+      environment:
+        SPRING_DATASOURCE_URL: ${DB_URL_REPORT} # Variable de entorno para la URL de la base de datos
+        SPRING_DATASOURCE_USERNAME: ${DB_USER} # Variable de entorno para el usuario
+        SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD} # Variable de entorno para la contraseña
+        SPRING_JPA_HIBERNATE_DDL_AUTO: update # Configuración para actualizar el esquema de la base de datos
+      ports:
+        - "8081:8081"
 
-  bff:
-    build: ./cordillera-bff
-    container_name: cordillera-bff
-    restart: always
-    depends_on:
-      - kpi-service
-      - report-service
-    environment:
-      KPI_SERVICE_URL: http://kpi-service:8082/api/kpis
-      REPORT_SERVICE_URL: http://report-service:8081/api/reports
-    ports:
-      - "8080:8080"
+    bff:
+      build: ./cordillera-bff
+      container_name: cordillera-bff
+      restart: always
+    #depends_on:
+    #  - kpi-service
+    #  - report-service
+      environment:
+        KPI_SERVICE_URL: http://kpi-service:8082/api/kpis
+        REPORT_SERVICE_URL: http://report-service:8081/api/reports
+      ports:
+        - "8080:8080"
 
-  frontend:
-    build: ./cordillera-kpi-dashboard
-    container_name: cordillera-kpi-dashboard
-    restart: always
-    depends_on:
-      - bff
-    ports:
-      - "5173:80"
+    frontend:
+      build: ./cordillera-kpi-dashboard
+      container_name: cordillera-kpi-dashboard
+      restart: always
+      depends_on:
+        - bff
+      ports:
+        - "5173:80"
 
-volumes:
-  postgres_data:
+#volumes:
+#  postgres_data:

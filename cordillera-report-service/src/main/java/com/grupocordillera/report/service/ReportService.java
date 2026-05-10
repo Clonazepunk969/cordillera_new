@@ -26,7 +26,9 @@ public class ReportService {
     }
 
     public ReportResponse createReport(ReportRequest request) {
+
         Report report = new Report();
+
         report.setTitle(request.getTitle());
         report.setDescription(request.getDescription());
         report.setType(request.getType());
@@ -34,6 +36,7 @@ public class ReportService {
         report.setCreatedAt(LocalDateTime.now());
 
         Report saved = reportRepository.save(report);
+
         return mapToResponse(saved);
     }
 
@@ -44,25 +47,31 @@ public class ReportService {
                 .collect(Collectors.toList());
     }
 
-    public ReportResponse getById(Long id) {
+    public ReportResponse getById(long id) {
+
         Report report = reportRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Report no encontrado"));
 
         return mapToResponse(report);
     }
 
-    public byte[] generatePdf(Long reportId) {
+    @SuppressWarnings("deprecation")
+    public byte[] generatePdf(long reportId) {
+
         Report report = reportRepository.findById(reportId)
                 .orElseThrow(() -> new RuntimeException("Reporte no encontrado"));
 
-        try (PDDocument document = new PDDocument();
-             ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+        try (
+                PDDocument document = new PDDocument();
+                ByteArrayOutputStream output = new ByteArrayOutputStream()
+        ) {
 
             PDPage page = new PDPage();
             document.addPage(page);
 
             PDPageContentStream content = new PDPageContentStream(document, page);
 
+            // Header
             content.setNonStrokingColor(6, 19, 58);
             content.addRect(0, 735, 612, 57);
             content.fill();
@@ -74,6 +83,7 @@ public class ReportService {
             content.showText("Cordillera SPA - Reporte Ejecutivo");
             content.endText();
 
+            // Título
             content.beginText();
             content.setNonStrokingColor(17, 24, 39);
             content.setFont(PDType1Font.HELVETICA_BOLD, 20);
@@ -81,16 +91,29 @@ public class ReportService {
             content.showText(safe(report.getTitle()));
             content.endText();
 
+            // Línea decorativa
             content.setStrokingColor(139, 92, 246);
             content.setLineWidth(2);
             content.moveTo(50, 675);
             content.lineTo(560, 675);
             content.stroke();
 
+            // Datos
             drawLabelValue(content, "Tipo de reporte:", safe(report.getType()), 50, 635);
-            drawLabelValue(content, "Creado por:", safe(report.getCreatedBy()), 50, 610);
-            drawLabelValue(content, "Fecha:", report.getCreatedAt() != null ? report.getCreatedAt().toString() : "Sin fecha", 50, 585);
 
+            drawLabelValue(content, "Creado por:", safe(report.getCreatedBy()), 50, 610);
+
+            drawLabelValue(
+                    content,
+                    "Fecha:",
+                    report.getCreatedAt() != null
+                            ? report.getCreatedAt().toString()
+                            : "Sin fecha",
+                    50,
+                    585
+            );
+
+            // Caja descripción
             content.setNonStrokingColor(248, 250, 252);
             content.addRect(50, 360, 510, 180);
             content.fill();
@@ -109,6 +132,7 @@ public class ReportService {
             content.showText(safe(report.getDescription()));
             content.endText();
 
+            // Footer
             content.setStrokingColor(226, 232, 240);
             content.setLineWidth(1);
             content.moveTo(50, 80);
@@ -125,6 +149,7 @@ public class ReportService {
             content.close();
 
             document.save(output);
+
             return output.toByteArray();
 
         } catch (Exception e) {
@@ -132,7 +157,15 @@ public class ReportService {
         }
     }
 
-    private void drawLabelValue(PDPageContentStream content, String label, String value, int x, int y) throws Exception {
+    @SuppressWarnings("deprecation")
+    private void drawLabelValue(
+            PDPageContentStream content,
+            String label,
+            String value,
+            int x,
+            int y
+    ) throws Exception {
+
         content.beginText();
         content.setNonStrokingColor(31, 41, 55);
         content.setFont(PDType1Font.HELVETICA_BOLD, 12);
@@ -149,10 +182,13 @@ public class ReportService {
     }
 
     private String safe(String value) {
-        return value != null && !value.trim().isEmpty() ? value : "Sin información";
+        return value != null && !value.trim().isEmpty()
+                ? value
+                : "Sin información";
     }
 
     private ReportResponse mapToResponse(Report r) {
+
         return new ReportResponse(
                 r.getId(),
                 r.getTitle(),

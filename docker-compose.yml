@@ -6,14 +6,27 @@ services:
     container_name: cordillera-postgres
     restart: always
     environment:
-      POSTGRES_USER: ${DB_USER} # Variable de entorno para el usuario
-      POSTGRES_PASSWORD: ${DB_PASSWORD} # Variable de entorno para la contraseña
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: postgres
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/postgres/init:/docker-entrypoint-initdb.d
+
+  auth-service:
+    build: ./cordillera-auth-service
+    container_name: cordillera-auth-service
+    restart: always
+    depends_on:
+      - postgres
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/cordillera_auth_db
+      SPRING_DATASOURCE_USERNAME: ${DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "8083:8083"
 
   kpi-service:
     build: ./cordillera-kpi-service
@@ -23,8 +36,8 @@ services:
       - postgres
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/cordillera_kpi_db
-      SPRING_DATASOURCE_USERNAME: ${DB_USER} # Variable de entorno para el usuario
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD} # Variable de entorno para la contraseña
+      SPRING_DATASOURCE_USERNAME: ${DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
     ports:
       - "8082:8082"
 
@@ -36,8 +49,8 @@ services:
       - postgres
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/cordillera_report_db
-      SPRING_DATASOURCE_USERNAME: ${DB_USER} # Variable de entorno para el usuario
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD} # Variable de entorno para la contraseña
+      SPRING_DATASOURCE_USERNAME: ${DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
     ports:
       - "8081:8081"
 
@@ -46,9 +59,11 @@ services:
     container_name: cordillera-bff
     restart: always
     depends_on:
+      - auth-service
       - kpi-service
       - report-service
     environment:
+      AUTH_SERVICE_URL: http://auth-service:8083/api/auth
       KPI_SERVICE_URL: http://kpi-service:8082/api/kpis
       REPORT_SERVICE_URL: http://report-service:8081/api/reports
     ports:

@@ -48,7 +48,7 @@ public class KpiService {
                 .collect(Collectors.toList());
     }
 
-    public KpiResponse getKpiById(Long id) {
+    public KpiResponse getKpiById(long id) {
         Kpi kpi = kpiRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("KPI no encontrado con id: " + id));
 

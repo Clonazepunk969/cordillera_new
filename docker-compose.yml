@@ -69,14 +69,14 @@ services:
     ports:
       - "8080:8080"
 
-  frontend:
-    build: ./cordillera-kpi-dashboard
-    container_name: cordillera-kpi-dashboard
-    restart: always
-    depends_on:
-      - bff
-    ports:
-      - "5173:80"
+    frontend:
+      build: ./cordillera-kpi-dashboard
+      container_name: cordillera-kpi-dashboard
+      restart: always
+      depends_on:
+        - bff
+      ports:
+        - "5173:80"
 
-volumes:
-  postgres_data:
+#volumes:
+#  postgres_data:

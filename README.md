@@ -271,7 +271,7 @@ Desarrollar una plataforma empresarial moderna basada en microservicios que perm
 
 - Massimo Navarrete
 - Javiera Tapia
-- Alexis Perez
+- Alexiss Perez
 - Camila Ibarra
 - Fernanda Collinao
 

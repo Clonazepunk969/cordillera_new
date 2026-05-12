@@ -7,10 +7,9 @@ import com.grupocordillera.auth.model.Usuario;
 import com.grupocordillera.auth.repository.UsuarioRepository;
 import com.grupocordillera.auth.security.JwtUtil;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -19,20 +18,28 @@ import java.util.Map;
 @RequestMapping("/auth")
 public class AuthController {
 
-    @Autowired
-    private UsuarioRepository usuarioRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final JwtUtil jwtUtil;
+    private final PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private JwtUtil jwtUtil;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    public AuthController(
+            UsuarioRepository usuarioRepository,
+            JwtUtil jwtUtil,
+            PasswordEncoder passwordEncoder
+    ) {
+        this.usuarioRepository = usuarioRepository;
+        this.jwtUtil = jwtUtil;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@Valid @RequestBody AuthRequest request) {
+    public ResponseEntity<Map<String, String>> register(@Valid @RequestBody AuthRequest request) {
+
+        Map<String, String> response = new HashMap<>();
 
         if (usuarioRepository.findByUsername(request.getUsername()).isPresent()) {
-            return ResponseEntity.badRequest().body("El usuario ya existe");
+            response.put("message", "El usuario ya existe");
+            return ResponseEntity.badRequest().body(response);
         }
 
         Usuario usuario = new Usuario();
@@ -48,7 +55,8 @@ public class AuthController {
         usuario.setRole(role.toUpperCase());
         usuarioRepository.save(usuario);
 
-        return ResponseEntity.ok("Usuario registrado correctamente");
+        response.put("message", "Usuario registrado correctamente");
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/login")
@@ -69,7 +77,7 @@ public class AuthController {
     }
 
     @PutMapping("/reset-password")
-    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
+    public ResponseEntity<Map<String, String>> resetPassword(@RequestBody ResetPasswordRequest request) {
 
         Usuario usuario = usuarioRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
@@ -84,30 +92,24 @@ public class AuthController {
     }
 
     @GetMapping("/validate-token")
-    public ResponseEntity<?> validateToken(
-            @RequestHeader(value = "Authorization", required = false) String authorizationHeader
+    public ResponseEntity<Map<String, String>> validateToken(
+            @RequestHeader("Authorization") String authHeader
     ) {
+        Map<String, String> response = new HashMap<>();
 
-        Map<String, Object> response = new HashMap<>();
-
-        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
-            response.put("valid", false);
-            response.put("message", "Token no enviado");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            response.put("message", "Token inválido");
             return ResponseEntity.status(401).body(response);
         }
 
-        String token = authorizationHeader.substring(7);
-        boolean valid = jwtUtil.validateToken(token);
+        String token = authHeader.substring(7);
 
-        if (!valid) {
-            response.put("valid", false);
-            response.put("message", "Token inválido o expirado");
-            return ResponseEntity.status(401).body(response);
+        if (jwtUtil.validateToken(token)) {
+            response.put("message", "Token válido");
+            return ResponseEntity.ok(response);
         }
 
-        response.put("valid", true);
-        response.put("username", jwtUtil.extractUsername(token));
-
-        return ResponseEntity.ok(response);
+        response.put("message", "Token inválido");
+        return ResponseEntity.status(401).body(response);
     }
 }

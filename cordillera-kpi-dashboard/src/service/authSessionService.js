@@ -1,17 +1,26 @@
 import axios from "axios";
 
 const authSessionApi = axios.create({
-    baseURL: "http://localhost:8082",
-    });
+  baseURL: "http://localhost:8080",
+});
 
-    export const validateToken = async () => {
+export const validateToken = async () => {
+  try {
     const token = localStorage.getItem("token");
 
-    const response = await authSessionApi.get("/auth/validate-token", {
-        headers: {
+    if (!token) {
+      return false;
+    }
+
+    const response = await authSessionApi.get("/api/auth/validate-token", {
+      headers: {
         Authorization: `Bearer ${token}`,
-        },
+      },
     });
 
-    return response.data;
+    return response.status === 200;
+  } catch (error) {
+    localStorage.removeItem("token");
+    return false;
+  }
 };
